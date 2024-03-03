@@ -1,4 +1,6 @@
 FROM golang:latest AS coreBuilder
+RUN apt-get update && apt-get install -y libwebp-dev \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /work
 
 COPY ./go.mod ./go.sum ./
