@@ -27,7 +27,7 @@ var (
 	errUnsupportedImageFormat = fmt.Errorf("unsupported image format")
 )
 
-func validateImage(data io.Reader) (string, error) {
+func validateImage(data io.ReadSeeker) (string, error) {
 	_, format, err := image.DecodeConfig(data)
 	if err != nil {
 		log.Printf("failed to decode image header: %v", err)
@@ -36,10 +36,11 @@ func validateImage(data io.Reader) (string, error) {
 	if _, ok := supportedImageFormats[format]; !ok {
 		return "", errUnsupportedImageFormat
 	}
+	_, _ = data.Seek(0, io.SeekStart)
 	return format, nil
 }
 
-func processImage(data io.Reader) (*bytes.Reader, error) {
+func processImage(data io.ReadSeeker) (*bytes.Reader, error) {
 	imgFmt, err := validateImage(data)
 	if err != nil {
 		return nil, fmt.Errorf("image validation failed: %w", err)
