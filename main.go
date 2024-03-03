@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -46,7 +47,7 @@ func uploadFile(client *s3.Client, userID string, data io.Reader, length int64) 
 		Bucket:        &bucketName,
 		Key:           aws.String(key),
 		Body:          data,
-		ContentType:   aws.String("image/jpeg"),
+		ContentType:   aws.String("image/webp"),
 		ContentLength: aws.Int64(length),
 	})
 
@@ -159,14 +160,22 @@ func main() {
 			return c.JSON(500, err)
 		}
 
-		reader := bytes.NewReader(buf)
-		size := int64(len(buf))
+		processed, err := processImage(bytes.NewReader(buf))
+		if err != nil {
+			log.Println(err)
+			if errors.Is(err, errUnsupportedImageFormat) {
+				return c.JSON(400, echo.Map{"error": "unsupported image format"})
+			}
+			return c.JSON(500, err)
+		}
+
+		size := processed.Size()
 
 		if user.TotalBytes+size > quota {
 			return c.JSON(403, echo.Map{"error": "quota exceeded"})
 		}
 
-		fileID, err := uploadFile(client, requester, reader, size)
+		fileID, err := uploadFile(client, requester, processed, size)
 		if err != nil {
 			log.Println(err)
 			return c.JSON(500, err)
