@@ -7,6 +7,11 @@ import (
 	"log"
 
 	"image"
+	_ "image/jpeg"
+	_ "image/png"
+
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/webp"
 
 	"github.com/disintegration/imaging"
 	webpenc "github.com/kolesa-team/go-webp/encoder"
@@ -25,7 +30,8 @@ var (
 func validateImage(data io.Reader) (string, error) {
 	_, format, err := image.DecodeConfig(data)
 	if err != nil {
-		return "", fmt.Errorf("failed to decode image header: %w", err)
+		log.Printf("failed to decode image header: %v", err)
+		return "", errUnsupportedImageFormat
 	}
 	if _, ok := supportedImageFormats[format]; !ok {
 		return "", errUnsupportedImageFormat
